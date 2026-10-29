@@ -1,0 +1,1814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LEXICON SUPREME: Endless, Rush & Duos</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            display: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+            },
+            tile: {
+              correct: '#10b981',
+              present: '#f59e0b',
+              absent: '#334155',
+              border: '#475569',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Card Flip & 3D Transitions */
+    .perspective-600 {
+      perspective: 600px;
+    }
+    .tile-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+    }
+    .tile-inner.flipped {
+      transform: rotateX(180deg);
+    }
+    .tile-front, .tile-back {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-family: 'Outfit', sans-serif;
+      border-radius: 0.5rem;
+      user-select: none;
+    }
+    .tile-back {
+      transform: rotateX(180deg);
+    }
+
+    /* Keyframe Animations */
+    @keyframes keyPop {
+      0% { transform: scale(0.85); opacity: 0.7; }
+      50% { transform: scale(1.12); }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-pop {
+      animation: keyPop 120ms cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    @keyframes shakeRow {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-9px); }
+      40% { transform: translateX(9px); }
+      60% { transform: translateX(-6px); }
+      80% { transform: translateX(6px); }
+    }
+    .animate-shake {
+      animation: shakeRow 420ms ease-in-out;
+    }
+
+    @keyframes winBounce {
+      0%, 100% { transform: translateY(0); }
+      35% { transform: translateY(-20px) scale(1.06); }
+      60% { transform: translateY(0); }
+      80% { transform: translateY(-6px); }
+    }
+    .animate-win {
+      animation: winBounce 600ms ease;
+    }
+
+    @keyframes floatToast {
+      0% { opacity: 0; transform: translate(-50%, 12px) scale(0.9); }
+      15% { opacity: 1; transform: translate(-50%, -4px) scale(1.05); }
+      85% { opacity: 1; transform: translate(-50%, -10px) scale(1); }
+      100% { opacity: 0; transform: translate(-50%, -28px) scale(0.95); }
+    }
+    .floating-banner {
+      animation: floatToast 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* High Contrast Accessible Styles */
+    .high-contrast .bg-correct {
+      background-color: #f97316 !important; /* Orange */
+    }
+    .high-contrast .bg-present {
+      background-color: #06b6d4 !important; /* Cyan */
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.1);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.5);
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans select-none antialiased overflow-x-hidden transition-colors duration-200">
+
+  <!-- Confetti Canvas Overlay -->
+  <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50"></canvas>
+
+  <!-- Floating Toast Notifications -->
+  <div id="toast-container" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-1.5 pointer-events-none w-11/12 max-w-sm"></div>
+
+  <!-- Big Floating Praise Banner -->
+  <div id="praise-container" class="fixed inset-x-0 top-32 flex justify-center pointer-events-none z-50"></div>
+
+  <!-- Header Navigation -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md sticky top-0 z-40 px-3 py-2">
+    <div class="max-w-4xl mx-auto flex items-center justify-between gap-2">
+      <!-- Left Controls -->
+      <div class="flex items-center gap-1 sm:gap-2">
+        <button id="btn-howtoplay" class="p-2 rounded-xl hover:bg-slate-800 text-slate-300 hover:text-white transition" title="How To Play">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-width="2"/><path stroke-linecap="round" stroke-width="2" d="M12 16v.01M12 13a2 2 0 10-2-2"/></svg>
+        </button>
+        <button id="btn-settings" class="p-2 rounded-xl hover:bg-slate-800 text-slate-300 hover:text-white transition" title="Game Settings">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3" stroke-width="2"/></svg>
+        </button>
+        <button id="btn-sound-toggle" class="p-2 rounded-xl hover:bg-slate-800 text-slate-300 hover:text-white transition" title="Toggle Sound">
+          <svg id="icon-sound-on" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072M18.364 5.636a9 9 0 010 12.728M11 5L6 9H2v6h4l5 4V5z"/></svg>
+          <svg id="icon-sound-off" class="w-5 h-5 hidden text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/></svg>
+        </button>
+      </div>
+
+      <!-- Center Logo & Streak Flame -->
+      <div class="text-center">
+        <h1 class="text-lg sm:text-2xl font-black font-display tracking-tight bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-400 bg-clip-text text-transparent flex items-center justify-center gap-1">
+          <span>LEXICON SUPREME</span>
+          <span id="streak-indicator" class="text-base sm:text-xl hidden" title="Active Streak">🔥</span>
+        </h1>
+      </div>
+
+      <!-- Right Economy & Stats -->
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <div class="flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-full text-amber-400 font-extrabold text-xs shadow-inner">
+          <span>🪙</span>
+          <span id="stat-coins-display">0</span>
+        </div>
+        <button id="btn-stats" class="p-2 rounded-xl hover:bg-slate-800 text-slate-300 hover:text-white transition" title="Career Stats">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sub-header Level & XP Bar -->
+    <div class="max-w-md mx-auto mt-1 px-1 flex items-center gap-2">
+      <span id="ui-player-rank" class="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 font-black text-[10px] uppercase tracking-wider">
+        Novice (Lv. 1)
+      </span>
+      <div class="flex-1 bg-slate-800 h-1.5 rounded-full overflow-hidden">
+        <div id="ui-xp-fill" class="bg-gradient-to-r from-emerald-400 to-teal-400 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+      <span id="ui-xp-label" class="text-[10px] text-slate-400 font-mono font-bold">0 / 100 XP</span>
+    </div>
+  </header>
+
+  <!-- Mode Selector Bar -->
+  <div class="max-w-lg w-full mx-auto px-3 pt-2.5 flex flex-col gap-2">
+    <!-- Mode Pills -->
+    <div class="grid grid-cols-4 p-1 rounded-xl bg-slate-800/80 border border-slate-700/60 text-xs font-bold gap-1 text-center">
+      <button data-mode="endless" class="tab-mode py-1.5 rounded-lg transition-all bg-emerald-600 text-white shadow">
+        ♾️ Endless
+      </button>
+      <button data-mode="daily" class="tab-mode py-1.5 rounded-lg transition-all text-slate-400 hover:text-white">
+        📅 Daily
+      </button>
+      <button data-mode="rush" class="tab-mode py-1.5 rounded-lg transition-all text-slate-400 hover:text-white">
+        ⚡ Rush
+      </button>
+      <button data-mode="duo" class="tab-mode py-1.5 rounded-lg transition-all text-slate-400 hover:text-white">
+        👥 Duo
+      </button>
+    </div>
+
+    <!-- Word Length & Mode Status Bar -->
+    <div class="flex items-center justify-between text-xs px-1">
+      <!-- Letters Toggle (Disabled in Duo for UI fit) -->
+      <div id="length-selector-container" class="flex items-center gap-1 bg-slate-800/60 p-0.5 rounded-lg border border-slate-700/60">
+        <span class="text-[10px] font-bold text-slate-400 px-1">LENGTH:</span>
+        <button data-len="4" class="btn-len px-2.5 py-0.5 rounded font-bold text-slate-400 hover:text-white transition">4</button>
+        <button data-len="5" class="btn-len px-2.5 py-0.5 rounded font-bold bg-emerald-500 text-white transition">5</button>
+        <button data-len="6" class="btn-len px-2.5 py-0.5 rounded font-bold text-slate-400 hover:text-white transition">6</button>
+      </div>
+
+      <!-- Dynamic Info Badge / Rush Timer -->
+      <div id="mode-status-info" class="flex items-center gap-2 font-bold text-xs text-slate-300">
+        <!-- Injected dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Primary Game Area -->
+  <main class="flex-1 flex flex-col items-center justify-between px-2 py-1 max-w-xl w-full mx-auto">
+    <!-- Boards Container (Single or Dual for Duo mode) -->
+    <div class="flex-1 flex items-center justify-center w-full py-1">
+      <div id="boards-wrapper" class="flex items-start justify-center gap-3 sm:gap-4 w-full">
+        <!-- Board 1 -->
+        <div id="board-1-container" class="flex flex-col items-center w-full max-w-[340px]">
+          <div id="board-1-tag" class="text-[10px] font-extrabold uppercase tracking-widest text-emerald-400 mb-1 hidden">Board A</div>
+          <div id="board-1" class="grid gap-1.5 w-full"></div>
+        </div>
+
+        <!-- Board 2 (Visible only in Duo Mode) -->
+        <div id="board-2-container" class="flex flex-col items-center w-full max-w-[340px] hidden">
+          <div id="board-2-tag" class="text-[10px] font-extrabold uppercase tracking-widest text-teal-400 mb-1">Board B</div>
+          <div id="board-2" class="grid gap-1.5 w-full"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Power-Ups & Strategic Lifelines -->
+    <div class="w-full max-w-md px-2 py-1 mb-1 flex items-center justify-center gap-1.5 sm:gap-2">
+      <button id="perk-scout" class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 active:scale-95 border border-emerald-500/30 text-emerald-400 text-xs font-bold transition shadow-sm" title="Reveal 1 green letter">
+        <span>🔍 Scout</span>
+        <span class="text-[10px] bg-emerald-500/20 px-1 rounded">🪙 25</span>
+      </button>
+
+      <button id="perk-cull" class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 active:scale-95 border border-rose-500/30 text-rose-400 text-xs font-bold transition shadow-sm" title="Eliminate 3 wrong letters">
+        <span>💣 Cull 3</span>
+        <span class="text-[10px] bg-rose-500/20 px-1 rounded">🪙 20</span>
+      </button>
+
+      <button id="perk-clue" class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 active:scale-95 border border-purple-500/30 text-purple-300 text-xs font-bold transition shadow-sm" title="Get a definition hint">
+        <span>💡 Hint</span>
+        <span class="text-[10px] bg-purple-500/20 px-1 rounded">🪙 15</span>
+      </button>
+
+      <button id="perk-extrarow" class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 active:scale-95 border border-amber-500/30 text-amber-400 text-xs font-bold transition shadow-sm" title="Add +1 Extra Attempt Row">
+        <span>➕ +Row</span>
+        <span class="text-[10px] bg-amber-500/20 px-1 rounded">🪙 35</span>
+      </button>
+    </div>
+
+    <!-- Virtual On-screen Keyboard -->
+    <div id="virtual-keyboard" class="w-full max-w-lg px-0.5 pb-2 flex flex-col gap-1.5 touch-manipulation">
+      <!-- Injected by script -->
+    </div>
+  </main>
+
+  <!-- How to Play Modal -->
+  <div id="modal-help" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+      <button class="modal-close absolute top-4 right-4 text-slate-400 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+      <h2 class="text-xl font-black font-display mb-1 text-emerald-400">How To Play Lexicon Supreme</h2>
+      <p class="text-xs text-slate-400 mb-4">Master words across multiple game modes and level up your mastery!</p>
+
+      <div class="space-y-4 text-xs sm:text-sm text-slate-300">
+        <div>
+          <h3 class="font-bold text-white text-sm mb-1">🎮 Game Modes</h3>
+          <ul class="list-disc list-inside space-y-1 text-slate-400">
+            <li><strong>Endless:</strong> Continuous rounds with zero repeats until word pool is cleared.</li>
+            <li><strong>Daily Challenge:</strong> A synchronized word for every calendar day.</li>
+            <li><strong>Time Rush:</strong> 60s speed challenge. Solving a word earns <strong>+15s bonus</strong> and builds combo streaks!</li>
+            <li><strong>Duo Lexicon:</strong> Solve <strong>2 hidden words</strong> simultaneously using the same keystrokes across 7 guesses.</li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-white text-sm mb-1">🟩 Color Rules</h3>
+          <div class="space-y-1.5 text-xs">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded bg-emerald-500 text-white font-bold flex items-center justify-center">W</span>
+              <span><strong>Green:</strong> Letter is in the word and in the exact spot.</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded bg-amber-500 text-white font-bold flex items-center justify-center">I</span>
+              <span><strong>Yellow:</strong> Letter is in the word but wrong spot.</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded bg-slate-700 text-white font-bold flex items-center justify-center">N</span>
+              <span><strong>Gray:</strong> Letter is not present in the word.</span>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-white text-sm mb-1">🪙 Power-Ups</h3>
+          <p class="text-slate-400 text-xs">Spend coins earned from winning streaks to <strong>Scout</strong> green letters, <strong>Cull</strong> unused letters, get <strong>Clue Hints</strong>, or unlock emergency <strong>+Row</strong> lifelines!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="modal-settings" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl relative">
+      <button class="modal-close absolute top-4 right-4 text-slate-400 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+      <h2 class="text-xl font-black font-display mb-4 text-slate-100">Settings</h2>
+
+      <div class="space-y-4 text-sm">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div>
+            <div class="font-bold text-slate-200">Hard Mode</div>
+            <div class="text-xs text-slate-400">Must reuse all revealed hints</div>
+          </div>
+          <input type="checkbox" id="setting-hardmode" class="w-4 h-4 accent-emerald-500 cursor-pointer">
+        </div>
+
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div>
+            <div class="font-bold text-slate-200">High Contrast Mode</div>
+            <div class="text-xs text-slate-400">Orange/Cyan for color clarity</div>
+          </div>
+          <input type="checkbox" id="setting-highcontrast" class="w-4 h-4 accent-emerald-500 cursor-pointer">
+        </div>
+
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div>
+            <div class="font-bold text-slate-200">Sound Synthesis</div>
+            <div class="text-xs text-slate-400">Audio effects & musical chords</div>
+          </div>
+          <input type="checkbox" id="setting-sound" checked class="w-4 h-4 accent-emerald-500 cursor-pointer">
+        </div>
+
+        <div class="pt-2">
+          <button id="btn-reset-history" class="w-full py-2 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-xs transition">
+            Clear Seen Words Cache
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- End Game & Statistics Modal -->
+  <div id="modal-stats" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm sm:max-w-md w-full p-6 shadow-2xl relative text-center">
+      <button class="modal-close absolute top-4 right-4 text-slate-400 hover:text-white">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+
+      <h2 id="stats-title" class="text-2xl font-black font-display mb-1">VICTORY!</h2>
+      <div id="stats-solution" class="text-sm font-bold text-emerald-400 mb-2"></div>
+      <div id="stats-definition" class="text-xs italic text-slate-400 bg-slate-800/60 p-2.5 rounded-xl border border-slate-800 mb-4 min-h-[2.5rem] flex items-center justify-center"></div>
+
+      <!-- Round Payout Card -->
+      <div class="grid grid-cols-3 gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-2.5 mb-4 text-xs font-bold">
+        <div>
+          <div id="payout-xp" class="text-lg font-black text-emerald-400">+0</div>
+          <div class="text-slate-400">XP Gained</div>
+        </div>
+        <div>
+          <div id="payout-coins" class="text-lg font-black text-amber-400">+0</div>
+          <div class="text-slate-400">Coins</div>
+        </div>
+        <div>
+          <div id="payout-streak" class="text-lg font-black text-orange-400">0 🔥</div>
+          <div class="text-slate-400">Win Streak</div>
+        </div>
+      </div>
+
+      <!-- Lifetime Stats Grid -->
+      <div class="grid grid-cols-4 gap-2 mb-4 text-center">
+        <div class="p-2 rounded-xl bg-slate-800/70 border border-slate-700/50">
+          <div id="stat-played" class="text-lg sm:text-xl font-black">0</div>
+          <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Played</div>
+        </div>
+        <div class="p-2 rounded-xl bg-slate-800/70 border border-slate-700/50">
+          <div id="stat-winpct" class="text-lg sm:text-xl font-black">0%</div>
+          <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Win %</div>
+        </div>
+        <div class="p-2 rounded-xl bg-slate-800/70 border border-slate-700/50">
+          <div id="stat-curstreak" class="text-lg sm:text-xl font-black">0</div>
+          <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Streak</div>
+        </div>
+        <div class="p-2 rounded-xl bg-slate-800/70 border border-slate-700/50">
+          <div id="stat-maxstreak" class="text-lg sm:text-xl font-black">0</div>
+          <div class="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Max</div>
+        </div>
+      </div>
+
+      <!-- Guess Distribution -->
+      <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-left mb-2">Guess Distribution</h3>
+      <div id="stats-distribution" class="space-y-1.5 mb-5 text-xs font-bold"></div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button id="btn-share-result" class="flex-1 py-3 px-3 rounded-xl font-bold bg-slate-800 hover:bg-slate-700 transition flex items-center justify-center gap-2 text-xs sm:text-sm">
+          <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/></svg>
+          Share
+        </button>
+        <button id="btn-next-round" class="flex-1 py-3 px-3 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30 transition text-xs sm:text-sm">
+          Play Next Word ➔
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. EXTENSIVE DICTIONARIES & DEFINITIONS (NO REPEATS GUARANTEED)
+       ========================================================================== */
+    const WORD_REPOSITORY = {
+      4: {
+        targets: [
+          "GAME", "LUCK", "FIRE", "WAVE", "BOLD", "STAR", "GOLD", "BLUE", "WIND", "BIRD",
+          "MOON", "COOL", "LION", "TIME", "GLOW", "HERO", "KING", "RAIN", "SNOW", "TRUE",
+          "BEAR", "CALM", "DAWN", "EDGE", "FAST", "GATE", "HOPE", "IRON", "JAZZ", "LEAF",
+          "MINT", "NOVA", "PARK", "RING", "SAND", "TEAM", "VIBE", "WOLF", "ZEAL", "ZONE",
+          "ACRE", "ARCH", "BARK", "BEAM", "BELL", "BOND", "CAMP", "CHEF", "COAT", "DARE",
+          "ECHO", "FARM", "FORK", "GIFT", "HALO", "HAWK", "ICON", "ISLE", "JUMP", "KEEN",
+          "LAKE", "MAZE", "NEST", "OASIS", "PEAK", "QUIZ", "REEF", "ROSE", "SURF", "TALE"
+        ],
+        definitions: {
+          "GAME": "An activity providing entertainment or fun.",
+          "LUCK": "Success or failure apparently brought by chance.",
+          "FIRE": "Combustion or rapid combustion of fuel producing light and heat.",
+          "WAVE": "A ridge or swell moving along the surface of a liquid.",
+          "STAR": "A luminous celestial body made of plasma.",
+          "GOLD": "A precious yellow metallic element.",
+          "BLUE": "Color of an unclouded sky; symbol of tranquility.",
+          "WIND": "The natural movement of the air.",
+          "GLOW": "A steady, radiant light.",
+          "HERO": "A person admired for courage or outstanding achievements."
+        }
+      },
+      5: {
+        targets: [
+          "REACT", "WORLD", "APPLE", "BEACH", "BRAIN", "CHAIR", "DANCE", "EAGLE", "FLAME",
+          "GHOST", "HEART", "INDEX", "JUICE", "KNIFE", "LEMON", "MUSIC", "NIGHT", "OCEAN",
+          "PIANO", "QUEEN", "RIVER", "SMILE", "TRAIN", "UNCLE", "VOICE", "WATER", "YOUTH",
+          "ZEBRA", "ALERT", "BLAZE", "CLOUD", "DREAM", "FROST", "GRAPE", "HONEY", "LIGHT",
+          "MANGO", "NOBLE", "PEACH", "QUEST", "SHINE", "TIGER", "VIGOR", "WHEAT", "STORM",
+          "SPARK", "CRANE", "SLATE", "AUDIO", "ROAST", "PLANT", "GUIDE", "FAITH", "GLORY",
+          "BEAST", "CABLE", "CHAMP", "CRAFT", "DRIFT", "EMBER", "FLOCK", "GIANT", "HAVEN",
+          "IVORY", "JEWEL", "KARMA", "LUNAR", "MAGIC", "NEXUS", "ORBIT", "PEARL", "RADAR",
+          "SCOUT", "TITAN", "ULTRA", "VALOR", "WHARF", "YACHT", "ZENITH", "PRIDE", "FLAIR"
+        ],
+        definitions: {
+          "REACT": "To act in response to an agent, stimulus, or influence.",
+          "WORLD": "The earth, together with all of its countries and peoples.",
+          "BRAIN": "An organ of soft nervous tissue functioning as the coordinating center.",
+          "HEART": "A hollow muscular organ that pumps blood through the body.",
+          "MUSIC": "Vocal or instrumental sounds combined in such a way as to produce beauty.",
+          "OCEAN": "A very large expanse of sea, in particular Atlantic or Pacific.",
+          "PIANO": "A large acoustic keyboard musical instrument.",
+          "QUEEN": "The female ruler of an independent state or noble sovereign.",
+          "SPARK": "A small fiery particle thrown off from a fire or electrical discharge.",
+          "QUEST": "A long or arduous search for something treasured.",
+          "SLATE": "A fine-grained gray, green, or bluish metamorphic rock.",
+          "ZENITH": "The highest point reached by a celestial or metaphorical body."
+        }
+      },
+      6: {
+        targets: [
+          "PLANET", "ROCKET", "CASTLE", "SILVER", "SPRING", "SUMMER", "WINTER", "GARDEN",
+          "KNIGHT", "FOREST", "DRAGON", "BRIDGE", "STREAM", "SHADOW", "FLOWER", "STRIKE",
+          "BRIGHT", "GOLDEN", "LEGEND", "FUTURE", "WONDER", "NATURE", "TRAVEL", "SPIRIT",
+          "RECORD", "PRINCE", "MEMORY", "PALACE", "SAFARI", "ISLAND", "CANDLE", "VICTOR",
+          "BEACON", "CHANCE", "DIVINE", "ENERGY", "FALCON", "GALAXY", "HARBOR", "IMPACT",
+          "JUNGLE", "LIZARD", "MARBLE", "NEBULA", "ORANGE", "PIRATE", "QUARTZ", "RHYTHM",
+          "SUNSET", "TEMPLE", "VALLEY", "WIZARD", "ZENITH", "AURORA", "BREEZE", "COSMIC"
+        ],
+        definitions: {
+          "PLANET": "A celestial body moving in an elliptical orbit around a star.",
+          "ROCKET": "A cylindrical projectile that can be propelled to a great height.",
+          "CASTLE": "A large building fortified against attack with thick walls.",
+          "DRAGON": "A mythical monster resembling a giant reptile with wings.",
+          "FOREST": "A large area covered chiefly with trees and undergrowth.",
+          "GALAXY": "A system of millions or billions of stars, together with gas and dust.",
+          "AURORA": "A natural electrical synthesis of light in the sky, especially the polar lights."
+        }
+      }
+    };
+
+    // Fast O(1) set of valid dictionary words to allow reasonable English guesses
+    const VALID_DICTIONARY_SET = new Set([
+      ...WORD_REPOSITORY[4].targets,
+      ...WORD_REPOSITORY[5].targets,
+      ...WORD_REPOSITORY[6].targets,
+      // Common 4s
+      "ABLE","ACRE","ALSO","AREA","ARMY","AWAY","BABY","BACK","BALL","BAND","BANK","BASE","BATH","BEAT","BEEN","BEER",
+      "BELL","BELT","BEST","BILL","BLOW","BOAT","BODY","BOMB","BOND","BONE","BOOK","BOOM","BORN","BOSS","BOTH","BOWL",
+      "BULK","BURN","BUSH","BUSY","CALL","CAME","CAMP","CARD","CARE","CASE","CASH","CAST","CELL","CHAT","CHEF","CITY",
+      "CLUB","COAL","COAT","CODE","COLD","COME","COOK","COPE","COPY","CORE","COST","CREW","CROP","DARK","DATA","DATE",
+      "DAYS","DEAD","DEAL","DEAN","DEAR","DEBT","DEEP","DENY","DESK","DIAL","DIED","DIET","DISC","DISK","DOES","DONE",
+      "DOOR","DOSE","DOWN","DRAW","DREW","DROP","DRUG","DUAL","DUKE","DUST","DUTY","EACH","EARN","EASE","EAST","EASY",
+      "ELSE","EVEN","EVER","EVIL","EXIT","FACE","FACT","FAIL","FAIR","FALL","FARM","FATE","FEAR","FEED","FEEL","FEET",
+      "FELL","FILE","FILL","FILM","FIND","FINE","FIRM","FISH","FIVE","FLAT","FLOW","FOOD","FOOT","FORD","FORM","FORT",
+      "FOUR","FREE","FROM","FUEL","FULL","FUND","GAIN","GATE","GEAR","GENE","GIFT","GIRL","GIVE","GLAD","GOAL","GOES",
+      "GOLF","GONE","GOOD","GRAY","GREW","GROW","GULF","HAIR","HALF","HALL","HAND","HANG","HARD","HARM","HATE","HAVE",
+      "HEAD","HEAR","HEAT","HELD","HELL","HELP","HERE","HIGH","HILL","HIRE","HOLD","HOLE","HOLY","HOME","HOST","HOUR",
+      "HUGE","HUNG","HUNT","HURT","IDEA","INCH","INTO","ITEM","JACK","JANE","JEAN","JOHN","JOIN","JURY","JUST","KEEP",
+      "KEPT","KICK","KILL","KIND","KNEE","KNEW","KNOW","LACK","LADY","LAID","LANE","LAST","LATE","LEAD","LEAN","LEFT",
+      "LESS","LIFE","LIFT","LIKE","LINE","LINK","LIST","LIVE","LOAD","LOAN","LOCK","LOGO","LONG","LOOK","LORD","LOSE",
+      "LOSS","LOST","LOVE","MADE","MAIL","MAIN","MAKE","MALE","MANY","MARK","MASS","MEAL","MEAN","MEAT","MEET","MENU",
+      "MERE","MIKE","MILE","MILK","MILL","MIND","MINE","MISS","MODE","MOOD","MORE","MOST","MOVE","MUCH","MUST","NAME",
+      "NAVY","NEAR","NECK","NEED","NEWS","NEXT","NICE","NICK","NINE","NONE","NOSE","NOTE","OKAY","ONCE","ONLY","OPEN",
+      "ORAL","OVER","PACE","PACK","PAGE","PAID","PAIN","PAIR","PALM","PART","PASS","PAST","PATH","PEAK","PICK","PILE",
+      "PINE","PINK","PIPE","PLAN","PLAY","PLOT","PLUG","PLUS","POEM","POET","POLL","POOL","POOR","PORT","POST","PULL",
+      "PURE","PUSH","RACE","RAIL","RANK","RARE","RATE","READ","REAL","REAR","RELY","RENT","REST","RICE","RICH","RIDE",
+      "RISE","RISK","ROAD","ROCK","ROLE","ROLL","ROOF","ROOM","ROOT","RULE","RUSH","SAFE","SAID","SAKE","SALE","SALT",
+      "SAME","SAVE","SEAT","SEED","SEEK","SEEM","SEEN","SELF","SELL","SEND","SENT","SEPT","SHIP","SHOP","SHOT","SHOW",
+      "SHUT","SICK","SIDE","SIGN","SITE","SIZE","SKIN","SLIP","SLOW","SOFT","SOIL","SOLD","SOLE","SOME","SONG","SOON",
+      "SORT","SOUL","SPOT","STAY","STEP","STOP","SUCH","SUIT","SURE","TAKE","TALK","TALL","TANK","TAPE","TASK","TECH",
+      "TELL","TEND","TERM","TEST","TEXT","THAN","THAT","THEM","THEN","THEY","THIN","THIS","THOU","THUS","TIDE","TIED",
+      "TINY","TOLD","TOLL","TONE","TOOK","TOOL","TOUR","TOWN","TREE","TRIP","TUNE","TURN","TWIN","TYPE","UNIT","UPON",
+      "USED","USER","VARY","VAST","VERY","VIEW","VOTE","WAGE","WAIT","WAKE","WALK","WALL","WANT","WARD","WARM","WASH",
+      "WAYS","WEAK","WEAR","WEEK","WELL","WENT","WERE","WEST","WHAT","WHEN","WHOM","WIDE","WIFE","WILD","WILL","WINE",
+      "WING","WINS","WIPE","WIRE","WISE","WISH","WITH","WOOD","WORD","WORK","YARD","YEAH","YEAR","YOUR","ZERO",
+      // Common 5s
+      "ABOUT","ABOVE","ACTOR","ACUTE","ADMIT","ADOPT","ADULT","AFTER","AGAIN","AGENT","AGREE","AHEAD","ALARM","ALBUM",
+      "ALIEN","ALIGN","ALIKE","ALIVE","ALLOW","ALONE","ALONG","ALTER","AMONG","ANGEL","ANGER","ANGLE","ANGRY","APART",
+      "ARENA","ARGUE","ARISE","ARMOR","ARROW","ASIDE","ASSET","AVOID","AWAKE","AWARD","AWARE","BADGE","BAKER","BASIC",
+      "BASIS","BATCH","BEGIN","BEING","BELOW","BENCH","BIRTH","BLACK","BLADE","BLIND","BLOCK","BLOOD","BOARD","BOAST",
+      "BOOST","BOUND","BRAVE","BREAD","BREAK","BRIEF","BRING","BROAD","BROWN","BUILD","CABIN","CANAL","CANDY","CARRY",
+      "CATCH","CAUSE","CHAIN","CHARM","CHEST","CHIEF","CHILD","CIVIL","CLAIM","CLASS","CLEAN","CLEAR","CLIMB","CLOCK",
+      "CLOSE","COACH","COAST","COUNT","COURT","COVER","CROSS","CROWD","CROWN","CYCLE","DAILY","DELAY","DEPTH","DIRT",
+      "DRAFT","DRAIN","DRAMA","DRAWN","DRIVE","EARLY","EARTH","ENEMY","ENTRY","EQUAL","ERROR","EVENT","EXACT","EXIST",
+      "EXTRA","FAULT","FIELD","FIGHT","FINAL","FIRST","FLASH","FLAT","FLOOR","FLUID","FOCUS","FORCE","FORTH","FORTY",
+      "FOUND","FRAME","FRESH","FRONT","FRUIT","GIANT","GIVEN","GLASS","GLOBE","GOING","GRACE","GRADE","GRAND","GRANT",
+      "GRASS","GREAT","GREEN","GRIEF","GROUP","GROWN","GUARD","GUESS","GUEST","HABIT","HAPPY","HEAVY","HORSE","HOTEL",
+      "HOUSE","HUMAN","IDEAL","IMAGE","INNER","INPUT","ISSUE","JUDGE","LABEL","LARGE","LATER","LAUGH","LAYER","LEARN",
+      "LEASE","LEAST","LEAVE","LEGAL","LEVEL","LIMIT","LOCAL","LOGIC","LOOSE","LOVER","LOWER","LUCKY","LUNCH","MAJOR",
+      "MAKER","MAPLE","MARCH","MATCH","MAYBE","MAYOR","MEDIA","METAL","MIGHT","MODEL","MONEY","MONTH","MORAL","MOTOR",
+      "MOUNT","MOUSE","MOUTH","MOVIE","NEVER","NEWLY","NOISE","NORTH","NOTED","NOVEL","NURSE","OFFER","OFTEN","ORDER",
+      "OTHER","OUGHT","OUTER","OWNER","PAINT","PANEL","PAPER","PARTY","PEACE","PHASE","PHONE","PHOTO","PIECE","PILOT",
+      "PITCH","PLACE","PLAIN","PLANE","PLATE","POINT","POUND","POWER","PRESS","PRICE","PRIME","PRIZE","PROOF","PROUD",
+      "PROVE","PULSE","QUICK","QUIET","QUITE","RADIO","RAISE","RANGE","RAPID","RATIO","REACH","READY","REFER","RIDGE",
+      "RIGHT","ROUND","ROUTE","ROYAL","RURAL","SCALE","SCENE","SCOPE","SCORE","SENSE","SERVE","SEVEN","SHALL","SHARE",
+      "SHARP","SHEEP","SHEET","SHELF","SHELL","SHIFT","SHIRT","SHOCK","SHOOT","SHORT","SHOWN","SIGHT","SKILL","SLEEP",
+      "SLIDE","SMALL","SMART","SMOKE","SOLAR","SOLID","SOLVE","SORRY","SOUND","SOUTH","SPACE","SPARE","SPEAK","SPEED",
+      "SPEND","SPLIT","SPORT","STAGE","STAKE","STAND","START","STATE","STEAM","STEEL","STICK","STILL","STOCK","STONE",
+      "STORE","STORY","STRIP","STYLE","SUGAR","SUITE","SUPER","SWEET","SWIFT","TABLE","TAKEN","TASTE","TAXES","TEACH",
+      "TEETH","TEXAS","THANK","THEFT","THEIR","THEME","THERE","THESE","THICK","THING","THINK","THIRD","THOSE","THREE",
+      "THREW","THROW","TIGHT","TIMES","TIRED","TITLE","TODAY","TOPIC","TOTAL","TOUCH","TOUGH","TOWER","TRACK","TRADE",
+      "TREAT","TREND","TRUCK","TRULY","TRUST","TRUTH","TWICE","UNDER","UNION","UNITY","UNTIL","UPPER","UPSET","URBAN",
+      "USAGE","USUAL","VALID","VALUE","VIDEO","VIRUS","VISION","VISIT","VITAL","VIVID","WASTE","WATCH","WHEEL","WHERE",
+      "WHICH","WHILE","WHITE","WHOLE","WHOSE","WOMAN","WOMEN","WORRY","WORSE","WORST","WORTH","WOULD","WOUND","WRITE",
+      "WRONG","WROTE","YIELD","YOUNG",
+      // Common 6s
+      "ACTION","ADVICE","ANIMAL","ANSWER","AROUND","BREEZE","CANDLE","CHANCE","CHANGE","CHOICE","CIRCUS","CLEVER","CORNER",
+      "CREDIT","DAMAGE","DANGER","DECIDE","DEGREE","DESIGN","DOCTOR","ESCAPE","FAMILY","FAMOUS","FLIGHT","FORTUNE","FRIEND",
+      "GENTLE","GROUND","GUITAR","HEALTH","HEROIC","HUNTER","ISLAND","JOURNEY","LEADER","LITTLE","MARKET","MODERN","MOMENT",
+      "MOTION","NATION","NOTICE","NUMBER","OFFICE","PEOPLE","PERSON","PLAYER","PLEDGE","POCKET","POETRY","POLICE","POTATO",
+      "PUBLIC","PURPLE","REPEAT","RESULT","RETURN","SAFETY","SAMPLE","SCREEN","SECRET","SIMPLE","SISTER","SMOOTH","STABLE",
+      "STREET","STRONG","STUDIO","SYSTEM","TARGET","TICKET","TUNNEL","VECTOR","WEALTH","WINDOW","YELLOW"
+    ]);
+
+    /* ==========================================================================
+       2. PERSISTENCE & NON-REPEATING WORD QUEUE
+       ========================================================================== */
+    const STORAGE_KEY = "lexicon_supreme_save_v1";
+
+    function loadState() {
+      const defaults = {
+        coins: 100,
+        xp: 0,
+        level: 1,
+        played: 0,
+        wins: 0,
+        curStreak: 0,
+        maxStreak: 0,
+        seenWords: { 4: [], 5: [], 6: [] },
+        distribution: [0, 0, 0, 0, 0, 0, 0, 0], // support up to 8 guesses
+        hardMode: false,
+        highContrast: false,
+        sound: true,
+        lastDailyPlayedEpoch: -1
+      };
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? { ...defaults, ...JSON.parse(raw) } : defaults;
+      } catch (e) {
+        return defaults;
+      }
+    }
+
+    function saveState(s) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+      } catch (e) {}
+    }
+
+    let gameState = loadState();
+
+    /* ==========================================================================
+       3. NATIVE WEB AUDIO API SYNTHESIS (NO EXTERNAL CDNS REQUIRED)
+       ========================================================================== */
+    class AudioEngine {
+      constructor() {
+        this.ctx = null;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.ctx = new AudioContext();
+          }
+        }
+        if (this.ctx && this.ctx.state === "suspended") {
+          this.ctx.resume();
+        }
+      }
+
+      playTone(freq, type = 'sine', duration = 0.08, startTime = 0, volume = 0.15) {
+        if (!gameState.sound || !this.ctx) return;
+        try {
+          const t = this.ctx.currentTime + startTime;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, t);
+
+          gain.gain.setValueAtTime(volume, t);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(t);
+          osc.stop(t + duration);
+        } catch (e) {}
+      }
+
+      click() {
+        this.playTone(420, 'triangle', 0.03, 0, 0.08);
+      }
+
+      delete() {
+        this.playTone(240, 'sine', 0.04, 0, 0.09);
+      }
+
+      shake() {
+        this.playTone(130, 'sawtooth', 0.12, 0, 0.12);
+        this.playTone(105, 'sawtooth', 0.12, 0.04, 0.12);
+      }
+
+      reveal(status, colIndex = 0) {
+        const baseFreq = status === 'correct' ? 523.25 : (status === 'present' ? 440 : 220); // C5, A4, A3
+        const freq = baseFreq * (1 + colIndex * 0.07);
+        const wave = status === 'absent' ? 'sine' : 'triangle';
+        this.playTone(freq, wave, 0.14, 0, 0.14);
+      }
+
+      victory() {
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((n, i) => this.playTone(n, 'triangle', 0.22, i * 0.09, 0.18));
+      }
+
+      defeat() {
+        const notes = [311.13, 293.66, 261.63]; // Eb4, D4, C4
+        notes.forEach((n, i) => this.playTone(n, 'sawtooth', 0.25, i * 0.12, 0.12));
+      }
+
+      powerup() {
+        this.playTone(659.25, 'triangle', 0.1, 0, 0.15);
+        this.playTone(880, 'triangle', 0.16, 0.07, 0.15);
+      }
+
+      tick() {
+        this.playTone(987.77, 'sine', 0.02, 0, 0.1);
+      }
+    }
+
+    const soundfx = new AudioEngine();
+
+    /* ==========================================================================
+       4. PROCEDURAL CANVAS CONFETTI (NO EXTERNAL SCRIPTS)
+       ========================================================================== */
+    const canvas = document.getElementById("confetti-canvas");
+    const ctx = canvas.getContext("2d");
+    let confettiParticles = [];
+    let confettiAnimId = null;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function triggerConfetti() {
+      confettiParticles = [];
+      const colors = ["#10b981", "#34d399", "#f59e0b", "#fbbf24", "#38bdf8", "#818cf8", "#f43f5e"];
+      for (let i = 0; i < 90; i++) {
+        confettiParticles.push({
+          x: canvas.width / 2 + (Math.random() - 0.5) * 120,
+          y: canvas.height * 0.45,
+          vx: (Math.random() - 0.5) * 16,
+          vy: Math.random() * -14 - 4,
+          size: Math.random() * 8 + 5,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          vRot: (Math.random() - 0.5) * 10,
+          opacity: 1
+        });
+      }
+
+      if (confettiAnimId) cancelAnimationFrame(confettiAnimId);
+      animateConfetti();
+    }
+
+    function animateConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      confettiParticles.forEach((p, idx) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.35; // gravity
+        p.rotation += p.vRot;
+        p.opacity -= 0.009;
+
+        if (p.opacity > 0) {
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = Math.max(0, p.opacity);
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+          ctx.restore();
+        }
+      });
+
+      confettiParticles = confettiParticles.filter(p => p.opacity > 0 && p.y < canvas.height);
+      if (confettiParticles.length > 0) {
+        confettiAnimId = requestAnimationFrame(animateConfetti);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    /* ==========================================================================
+       5. GAME STATE & RANDOMIZATION ENGINE
+       ========================================================================== */
+    let currentMode = 'endless'; // 'endless' | 'daily' | 'rush' | 'duo'
+    let currentLength = 5;
+    let maxAttempts = 6;
+    let currentRow = 0;
+    let currentCol = 0;
+    let isGameOver = false;
+    let isRevealing = false;
+    let currentGuess = "";
+
+    // Dual Board targets (Duo mode utilizes targetWordB)
+    let targetWordA = "";
+    let targetWordB = "";
+    let boardAWon = false;
+    let boardBWon = false;
+
+    // Revealed hints for Hard Mode
+    let hintsBoardA = { greens: {}, yellows: new Set() };
+    let hintsBoardB = { greens: {}, yellows: new Set() };
+
+    // Rush Mode Timers
+    let rushTimeLeft = 60;
+    let rushSolvedCount = 0;
+    let rushTimerInterval = null;
+
+    // Guaranteed Unique Non-Repeating Word Picker
+    function pickNextWord(length) {
+      const bank = WORD_REPOSITORY[length].targets;
+      let seen = gameState.seenWords[length] || [];
+
+      // If all words have been played, reset the seen queue
+      if (seen.length >= bank.length) {
+        seen = [];
+        gameState.seenWords[length] = [];
+      }
+
+      // Filter available unplayed words
+      const available = bank.filter(w => !seen.includes(w));
+      const pool = available.length > 0 ? available : bank;
+
+      // Cryptographically sound random selection
+      const randArr = new Uint32Array(1);
+      window.crypto.getRandomValues(randArr);
+      const chosen = pool[randArr[0] % pool.length];
+
+      // Record word into seen history
+      seen.push(chosen);
+      gameState.seenWords[length] = seen;
+      saveState(gameState);
+
+      return chosen;
+    }
+
+    function getDailyEpoch() {
+      return Math.floor(Date.now() / 86400000);
+    }
+
+    function getDailyWord(length) {
+      const bank = WORD_REPOSITORY[length].targets;
+      const epoch = getDailyEpoch();
+      // Unique hash per word length
+      const hash = Math.abs((epoch * 9301 + 49297 + length * 1337) % 233280);
+      return bank[hash % bank.length];
+    }
+
+    function initRound() {
+      isGameOver = false;
+      isRevealing = false;
+      currentRow = 0;
+      currentCol = 0;
+      currentGuess = "";
+      boardAWon = false;
+      boardBWon = false;
+      hintsBoardA = { greens: {}, yellows: new Set() };
+      hintsBoardB = { greens: {}, yellows: new Set() };
+
+      // Set max attempts based on mode
+      maxAttempts = (currentMode === 'duo') ? 7 : 6;
+
+      // Word Selection
+      if (currentMode === 'daily') {
+        targetWordA = getDailyWord(currentLength);
+        targetWordB = "";
+      } else if (currentMode === 'duo') {
+        currentLength = 5; // Duo fixed to 5 for standard balance & screen width
+        targetWordA = pickNextWord(5);
+        let wordB = pickNextWord(5);
+        while (wordB === targetWordA) {
+          wordB = pickNextWord(5);
+        }
+        targetWordB = wordB;
+      } else {
+        targetWordA = pickNextWord(currentLength);
+        targetWordB = "";
+      }
+
+      buildBoards();
+      resetKeyboardVisuals();
+      updateModeUI();
+      document.getElementById("modal-stats").classList.add("hidden");
+    }
+
+    /* ==========================================================================
+       6. UI BUILDERS (DUAL BOARDS & RESPONSIVE KEYBOARD)
+       ========================================================================== */
+    const boardAEl = document.getElementById("board-1");
+    const boardBEl = document.getElementById("board-2");
+    const board2Container = document.getElementById("board-2-container");
+    const board1Tag = document.getElementById("board-1-tag");
+
+    function buildBoards() {
+      boardAEl.innerHTML = "";
+      boardBEl.innerHTML = "";
+      boardAEl.style.gridTemplateRows = `repeat(${maxAttempts}, minmax(0, 1fr))`;
+      boardBEl.style.gridTemplateRows = `repeat(${maxAttempts}, minmax(0, 1fr))`;
+
+      const isDuo = (currentMode === 'duo');
+      board2Container.classList.toggle("hidden", !isDuo);
+      board1Tag.classList.toggle("hidden", !isDuo);
+
+      for (let r = 0; r < maxAttempts; r++) {
+        boardAEl.appendChild(createRowElement('A', r, currentLength));
+        if (isDuo) {
+          boardBEl.appendChild(createRowElement('B', r, currentLength));
+        }
+      }
+    }
+
+    function createRowElement(boardKey, rowIndex, len) {
+      const row = document.createElement("div");
+      row.className = "grid gap-1 sm:gap-1.5 w-full";
+      row.id = `row-${boardKey}-${rowIndex}`;
+      row.style.gridTemplateColumns = `repeat(${len}, minmax(0, 1fr))`;
+
+      for (let c = 0; c < len; c++) {
+        const tile = document.createElement("div");
+        tile.className = "perspective-600 w-full aspect-square";
+        tile.id = `tile-${boardKey}-${rowIndex}-${c}`;
+
+        tile.innerHTML = `
+          <div class="tile-inner" id="inner-${boardKey}-${rowIndex}-${c}">
+            <div class="tile-front bg-slate-800/80 border-2 border-slate-700 text-slate-100 text-lg sm:text-2xl shadow-inner"></div>
+            <div class="tile-back text-white text-lg sm:text-2xl shadow-lg"></div>
+          </div>
+        `;
+        row.appendChild(tile);
+      }
+      return row;
+    }
+
+    const KEYBOARD_LAYOUT = [
+      ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+      ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+      ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "BACKSPACE"]
+    ];
+
+    function buildKeyboard() {
+      const kbContainer = document.getElementById("virtual-keyboard");
+      kbContainer.innerHTML = "";
+
+      KEYBOARD_LAYOUT.forEach(rowKeys => {
+        const row = document.createElement("div");
+        row.className = "flex justify-center gap-1 sm:gap-1.5 w-full";
+
+        rowKeys.forEach(k => {
+          const btn = document.createElement("button");
+          btn.dataset.key = k;
+          btn.type = "button";
+
+          let flexStyle = "flex-1 text-sm sm:text-base font-extrabold h-11 sm:h-12";
+          let label = k;
+
+          if (k === "ENTER" || k === "BACKSPACE") {
+            flexStyle = "flex-[1.4] text-xs sm:text-sm font-black h-11 sm:h-12";
+            if (k === "BACKSPACE") {
+              label = `
+                <svg class="w-5 h-5 mx-auto pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414-6.414A2 2 0 0110.828 5H20a2 2 0 012 2v10a2 2 0 01-2 2h-9.172a2 2 0 01-1.414-.586L3 12z"/>
+                </svg>
+              `;
+            }
+          }
+
+          btn.className = `${flexStyle} flex items-center justify-center rounded-lg bg-slate-700/80 hover:bg-slate-600 active:scale-95 text-slate-100 transition-all select-none shadow`;
+          btn.innerHTML = label;
+
+          btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            soundfx.init();
+            handleInput(k);
+          });
+
+          row.appendChild(btn);
+        });
+        kbContainer.appendChild(row);
+      });
+    }
+
+    function resetKeyboardVisuals() {
+      document.querySelectorAll("#virtual-keyboard button").forEach(btn => {
+        btn.dataset.status = "none";
+        btn.style.opacity = "1";
+        btn.classList.remove("bg-correct", "bg-present", "bg-slate-900", "text-slate-400");
+        btn.classList.add("bg-slate-700/80", "text-slate-100");
+      });
+    }
+
+    function updateKeyboardKey(letter, status) {
+      const btn = document.querySelector(`#virtual-keyboard button[data-key="${letter}"]`);
+      if (!btn) return;
+
+      const priority = { correct: 3, present: 2, absent: 1, none: 0 };
+      const current = btn.dataset.status || "none";
+
+      if (priority[status] > priority[current]) {
+        btn.dataset.status = status;
+        btn.classList.remove("bg-slate-700/80", "bg-correct", "bg-present", "bg-slate-900", "text-slate-400");
+
+        if (status === "correct") {
+          btn.classList.add("bg-correct", "bg-emerald-600", "text-white");
+        } else if (status === "present") {
+          btn.classList.add("bg-present", "bg-amber-500", "text-white");
+        } else {
+          btn.classList.add("bg-slate-900", "text-slate-400");
+        }
+      }
+    }
+
+    /* ==========================================================================
+       7. INPUT & GUESS EVALUATION
+       ========================================================================== */
+    function handleInput(key) {
+      if (isGameOver || isRevealing) return;
+
+      if (key === "BACKSPACE") {
+        deleteLetter();
+      } else if (key === "ENTER") {
+        submitGuess();
+      } else if (/^[A-Z]$/.test(key)) {
+        insertLetter(key);
+      }
+    }
+
+    function insertLetter(letter) {
+      if (currentCol < currentLength) {
+        currentGuess += letter;
+
+        // Populate active row tile for Board A
+        const innerA = document.getElementById(`inner-A-${currentRow}-${currentCol}`);
+        if (innerA) {
+          const front = innerA.querySelector(".tile-front");
+          front.textContent = letter;
+          front.classList.add("border-slate-400", "animate-pop");
+        }
+
+        // If Duo mode and Board B isn't already solved, populate Board B
+        if (currentMode === 'duo' && !boardBWon) {
+          const innerB = document.getElementById(`inner-B-${currentRow}-${currentCol}`);
+          if (innerB) {
+            const frontB = innerB.querySelector(".tile-front");
+            frontB.textContent = letter;
+            frontB.classList.add("border-slate-400", "animate-pop");
+          }
+        }
+
+        soundfx.click();
+        currentCol++;
+      }
+    }
+
+    function deleteLetter() {
+      if (currentCol > 0) {
+        currentCol--;
+        currentGuess = currentGuess.slice(0, -1);
+
+        const innerA = document.getElementById(`inner-A-${currentRow}-${currentCol}`);
+        if (innerA) {
+          const front = innerA.querySelector(".tile-front");
+          front.textContent = "";
+          front.classList.remove("border-slate-400", "animate-pop");
+        }
+
+        if (currentMode === 'duo' && !boardBWon) {
+          const innerB = document.getElementById(`inner-B-${currentRow}-${currentCol}`);
+          if (innerB) {
+            const frontB = innerB.querySelector(".tile-front");
+            frontB.textContent = "";
+            frontB.classList.remove("border-slate-400", "animate-pop");
+          }
+        }
+
+        soundfx.delete();
+      }
+    }
+
+    function shakeRow(boardKey, rowIdx) {
+      const row = document.getElementById(`row-${boardKey}-${rowIdx}`);
+      if (!row) return;
+      row.classList.remove("animate-shake");
+      void row.offsetWidth;
+      row.classList.add("animate-shake");
+      soundfx.shake();
+    }
+
+    function showToast(msg, ms = 1800) {
+      const box = document.getElementById("toast-container");
+      const el = document.createElement("div");
+      el.className = "bg-slate-800/95 border border-slate-700 text-slate-100 text-xs sm:text-sm font-bold px-4 py-2 rounded-xl shadow-2xl transition-all duration-300 opacity-0 translate-y-2 pointer-events-auto text-center";
+      el.textContent = msg;
+
+      box.appendChild(el);
+      setTimeout(() => el.classList.remove("opacity-0", "translate-y-2"), 10);
+      setTimeout(() => {
+        el.classList.add("opacity-0", "-translate-y-2");
+        setTimeout(() => el.remove(), 250);
+      }, ms);
+    }
+
+    function showPraiseBanner(text) {
+      const box = document.getElementById("praise-container");
+      const el = document.createElement("div");
+      el.className = "floating-banner text-2xl sm:text-3xl font-black font-display text-emerald-400 drop-shadow-lg tracking-wider";
+      el.textContent = text;
+      box.appendChild(el);
+      setTimeout(() => el.remove(), 1600);
+    }
+
+    function evaluateWord(guess, answer) {
+      const result = Array(currentLength).fill("absent");
+      const ansArr = answer.split("");
+      const guessArr = guess.split("");
+
+      // 1st Pass: Greens
+      for (let i = 0; i < currentLength; i++) {
+        if (guessArr[i] === ansArr[i]) {
+          result[i] = "correct";
+          ansArr[i] = null;
+        }
+      }
+
+      // 2nd Pass: Yellows
+      for (let i = 0; i < currentLength; i++) {
+        if (result[i] === "correct") continue;
+        const char = guessArr[i];
+        const matchIdx = ansArr.indexOf(char);
+        if (matchIdx !== -1) {
+          result[i] = "present";
+          ansArr[matchIdx] = null;
+        }
+      }
+
+      return result;
+    }
+
+    function checkHardModeRules(guess) {
+      if (!gameState.hardMode) return { valid: true };
+
+      // Validate against Board A hints
+      for (const [pos, ch] of Object.entries(hintsBoardA.greens)) {
+        if (guess[pos] !== ch) {
+          return { valid: false, msg: `Position ${Number(pos)+1} must be '${ch}'` };
+        }
+      }
+      for (const ch of hintsBoardA.yellows) {
+        if (!guess.includes(ch)) {
+          return { valid: false, msg: `Guess must contain '${ch}'` };
+        }
+      }
+      return { valid: true };
+    }
+
+    async function submitGuess() {
+      if (currentGuess.length < currentLength) {
+        showToast("Not enough letters");
+        shakeRow('A', currentRow);
+        if (currentMode === 'duo' && !boardBWon) shakeRow('B', currentRow);
+        return;
+      }
+
+      // Dictionary validation
+      if (!VALID_DICTIONARY_SET.has(currentGuess)) {
+        showToast("Not in word list");
+        shakeRow('A', currentRow);
+        if (currentMode === 'duo' && !boardBWon) shakeRow('B', currentRow);
+        return;
+      }
+
+      // Hard mode validation
+      const hardCheck = checkHardModeRules(currentGuess);
+      if (!hardCheck.valid) {
+        showToast(hardCheck.msg);
+        shakeRow('A', currentRow);
+        return;
+      }
+
+      isRevealing = true;
+      const guess = currentGuess;
+
+      // Eval Board A
+      const evalA = !boardAWon ? evaluateWord(guess, targetWordA) : null;
+      // Eval Board B (Duo mode)
+      const evalB = (currentMode === 'duo' && !boardBWon) ? evaluateWord(guess, targetWordB) : null;
+
+      // Animate Card Flips
+      for (let c = 0; c < currentLength; c++) {
+        await new Promise(r => setTimeout(r, 220));
+
+        if (!boardAWon) {
+          const innerA = document.getElementById(`inner-A-${currentRow}-${c}`);
+          const backA = innerA.querySelector(".tile-back");
+          backA.textContent = guess[c];
+
+          if (evalA[c] === 'correct') {
+            backA.classList.add("bg-correct", "bg-emerald-600");
+            hintsBoardA.greens[c] = guess[c];
+          } else if (evalA[c] === 'present') {
+            backA.classList.add("bg-present", "bg-amber-500");
+            hintsBoardA.yellows.add(guess[c]);
+          } else {
+            backA.classList.add("bg-slate-700");
+          }
+          innerA.classList.add("flipped");
+          updateKeyboardKey(guess[c], evalA[c]);
+          soundfx.reveal(evalA[c], c);
+        }
+
+        if (currentMode === 'duo' && !boardBWon) {
+          const innerB = document.getElementById(`inner-B-${currentRow}-${c}`);
+          const backB = innerB.querySelector(".tile-back");
+          backB.textContent = guess[c];
+
+          if (evalB[c] === 'correct') {
+            backB.classList.add("bg-correct", "bg-emerald-600");
+            hintsBoardB.greens[c] = guess[c];
+          } else if (evalB[c] === 'present') {
+            backB.classList.add("bg-present", "bg-amber-500");
+            hintsBoardB.yellows.add(guess[c]);
+          } else {
+            backB.classList.add("bg-slate-700");
+          }
+          innerB.classList.add("flipped");
+          updateKeyboardKey(guess[c], evalB[c]);
+        }
+      }
+
+      await new Promise(r => setTimeout(r, 300));
+
+      // Check win states
+      if (!boardAWon && guess === targetWordA) {
+        boardAWon = true;
+        animateRowBounce('A', currentRow);
+      }
+      if (currentMode === 'duo' && !boardBWon && guess === targetWordB) {
+        boardBWon = true;
+        animateRowBounce('B', currentRow);
+      }
+
+      const isTotalWin = (currentMode === 'duo') ? (boardAWon && boardBWon) : boardAWon;
+
+      if (isTotalWin) {
+        handleVictory();
+        return;
+      }
+
+      if (currentRow === maxAttempts - 1) {
+        handleDefeat();
+        return;
+      }
+
+      currentRow++;
+      currentCol = 0;
+      currentGuess = "";
+      isRevealing = false;
+    }
+
+    function animateRowBounce(boardKey, rowIdx) {
+      for (let c = 0; c < currentLength; c++) {
+        const tile = document.getElementById(`tile-${boardKey}-${rowIdx}-${c}`);
+        if (tile) {
+          setTimeout(() => tile.classList.add("animate-win"), c * 70);
+        }
+      }
+    }
+
+    /* ==========================================================================
+       8. ROUND COMPLETION & REWARDS
+       ========================================================================== */
+    function handleVictory() {
+      isGameOver = true;
+      isRevealing = false;
+      triggerConfetti();
+      soundfx.victory();
+
+      const praises = ["GENIUS!", "MAGNIFICENT!", "BRILLIANT!", "SPLENDID!", "SUPERB!", "PHEW!", "CLUTCH!"];
+      showPraiseBanner(praises[Math.min(currentRow, praises.length - 1)]);
+
+      // Calculate XP & Coin Payout
+      const speedBonus = (maxAttempts - currentRow) * 15;
+      let xpEarned = 50 + speedBonus;
+      let coinsEarned = 20 + Math.floor(speedBonus / 2);
+
+      if (currentMode === 'duo') {
+        xpEarned *= 2;
+        coinsEarned *= 2;
+      }
+
+      if (currentMode === 'rush') {
+        rushSolvedCount++;
+        rushTimeLeft += 15; // +15s bonus time
+        showToast(`⚡ +15s BONUS! (Solved: ${rushSolvedCount})`, 1800);
+        updateModeUI();
+      }
+
+      gameState.played++;
+      gameState.wins++;
+      gameState.curStreak++;
+      if (gameState.curStreak > gameState.maxStreak) {
+        gameState.maxStreak = gameState.curStreak;
+      }
+      gameState.distribution[currentRow]++;
+
+      if (currentMode === 'daily') {
+        gameState.lastDailyPlayedEpoch = getDailyEpoch();
+        xpEarned += 100;
+        coinsEarned += 50;
+      }
+
+      addXP(xpEarned);
+      addCoins(coinsEarned);
+
+      // In Rush Mode, automatically cycle to next word if timer remains
+      if (currentMode === 'rush' && rushTimeLeft > 0) {
+        setTimeout(() => {
+          initRound();
+        }, 1100);
+      } else {
+        setTimeout(() => {
+          showStatsModal(true, xpEarned, coinsEarned);
+        }, 1500);
+      }
+    }
+
+    function handleDefeat() {
+      isGameOver = true;
+      isRevealing = false;
+      soundfx.defeat();
+
+      gameState.played++;
+      gameState.curStreak = 0;
+      saveState(gameState);
+      renderProgression();
+
+      const revealedWords = (currentMode === 'duo') ? `${targetWordA} & ${targetWordB}` : targetWordA;
+      showToast(`Word was: ${revealedWords}`, 3500);
+
+      setTimeout(() => {
+        showStatsModal(false, 0, 0);
+      }, 1800);
+    }
+
+    /* ==========================================================================
+       9. POWER-UPS & STRATEGIC LIFELINES
+       ========================================================================== */
+    document.getElementById("perk-scout").addEventListener("click", () => {
+      if (isGameOver || isRevealing) return;
+      const COST = 25;
+      if (gameState.coins < COST) {
+        showToast("Need 25 Coins! Keep playing to earn.", 2000);
+        soundfx.shake();
+        return;
+      }
+
+      // Pick an undiscovered spot
+      const target = (!boardAWon) ? targetWordA : targetWordB;
+      const unrevealedPositions = [];
+      for (let i = 0; i < currentLength; i++) {
+        if (!hintsBoardA.greens[i]) unrevealedPositions.push(i);
+      }
+
+      if (unrevealedPositions.length === 0) {
+        showToast("All correct positions already solved!");
+        return;
+      }
+
+      const scoutIndex = unrevealedPositions[Math.floor(Math.random() * unrevealedPositions.length)];
+      const scoutChar = target[scoutIndex];
+      hintsBoardA.greens[scoutIndex] = scoutChar;
+
+      deductCoins(COST);
+      soundfx.powerup();
+      showToast(`🔍 Scouted: Position ${scoutIndex + 1} is '${scoutChar}'!`, 3000);
+
+      // Place visual preview in active row
+      const inner = document.getElementById(`inner-A-${currentRow}-${scoutIndex}`);
+      if (inner) {
+        const front = inner.querySelector(".tile-front");
+        front.textContent = scoutChar;
+        front.classList.add("text-emerald-400", "border-emerald-500");
+      }
+      updateKeyboardKey(scoutChar, 'correct');
+    });
+
+    document.getElementById("perk-cull").addEventListener("click", () => {
+      if (isGameOver || isRevealing) return;
+      const COST = 20;
+      if (gameState.coins < COST) {
+        showToast("Need 20 Coins!", 2000);
+        soundfx.shake();
+        return;
+      }
+
+      const activeTargets = (currentMode === 'duo') ? (targetWordA + targetWordB) : targetWordA;
+      const correctChars = new Set(activeTargets.split(""));
+
+      const removableKeys = [];
+      document.querySelectorAll("#virtual-keyboard button").forEach(btn => {
+        const k = btn.dataset.key;
+        if (/^[A-Z]$/.test(k) && !correctChars.has(k) && btn.dataset.status !== 'absent') {
+          removableKeys.push(btn);
+        }
+      });
+
+      if (removableKeys.length === 0) {
+        showToast("No incorrect letters left to eliminate!");
+        return;
+      }
+
+      // Pick 3 random
+      removableKeys.sort(() => Math.random() - 0.5);
+      const culled = removableKeys.slice(0, 3);
+      culled.forEach(btn => {
+        btn.dataset.status = 'absent';
+        btn.classList.add("bg-slate-900", "text-slate-400");
+        btn.style.opacity = "0.35";
+      });
+
+      deductCoins(COST);
+      soundfx.powerup();
+      showToast(`💣 Culled ${culled.length} dead letters!`, 2200);
+    });
+
+    document.getElementById("perk-clue").addEventListener("click", () => {
+      if (isGameOver || isRevealing) return;
+      const COST = 15;
+      if (gameState.coins < COST) {
+        showToast("Need 15 Coins!", 2000);
+        soundfx.shake();
+        return;
+      }
+
+      const def = WORD_REPOSITORY[currentLength].definitions[targetWordA] || "A widely used English word.";
+      deductCoins(COST);
+      soundfx.powerup();
+      showToast(`💡 Hint: "${def}"`, 5000);
+    });
+
+    document.getElementById("perk-extrarow").addEventListener("click", () => {
+      if (isGameOver || isRevealing) return;
+      const COST = 35;
+      if (maxAttempts >= 8) {
+        showToast("Maximum extra attempts reached!");
+        return;
+      }
+      if (gameState.coins < COST) {
+        showToast("Need 35 Coins!", 2000);
+        soundfx.shake();
+        return;
+      }
+
+      deductCoins(COST);
+      maxAttempts++;
+
+      boardAEl.appendChild(createRowElement('A', maxAttempts - 1, currentLength));
+      boardAEl.style.gridTemplateRows = `repeat(${maxAttempts}, minmax(0, 1fr))`;
+
+      if (currentMode === 'duo') {
+        boardBEl.appendChild(createRowElement('B', maxAttempts - 1, currentLength));
+        boardBEl.style.gridTemplateRows = `repeat(${maxAttempts}, minmax(0, 1fr))`;
+      }
+
+      soundfx.powerup();
+      showToast("➕ Added Lifeline Extra Row!", 2200);
+    });
+
+    /* ==========================================================================
+       10. PROGRESSION & STATS ENGINE
+       ========================================================================== */
+    function addXP(amount) {
+      gameState.xp += amount;
+      const newLevel = Math.floor(Math.sqrt(gameState.xp / 100)) + 1;
+      if (newLevel > gameState.level) {
+        gameState.level = newLevel;
+        gameState.coins += newLevel * 40;
+        showPraiseBanner(`LEVEL UP! LV. ${newLevel}`);
+        soundfx.victory();
+      }
+      saveState(gameState);
+      renderProgression();
+    }
+
+    function addCoins(amount) {
+      gameState.coins += amount;
+      saveState(gameState);
+      renderProgression();
+    }
+
+    function deductCoins(amount) {
+      gameState.coins = Math.max(0, gameState.coins - amount);
+      saveState(gameState);
+      renderProgression();
+    }
+
+    function getRankName(lvl) {
+      if (lvl >= 15) return "Lexicon Titan";
+      if (lvl >= 10) return "Word Grandmaster";
+      if (lvl >= 6) return "Vocabulary Scholar";
+      if (lvl >= 3) return "Word Maven";
+      return "Novice";
+    }
+
+    function renderProgression() {
+      const lvl = gameState.level;
+      const baseXP = (lvl - 1) * (lvl - 1) * 100;
+      const nextXP = lvl * lvl * 100;
+      const currentXPProgress = gameState.xp - baseXP;
+      const neededXP = nextXP - baseXP;
+      const pct = Math.min(100, Math.max(0, (currentXPProgress / neededXP) * 100));
+
+      document.getElementById("stat-coins-display").textContent = gameState.coins;
+      document.getElementById("ui-player-rank").textContent = `${getRankName(lvl)} (Lv. ${lvl})`;
+      document.getElementById("ui-xp-fill").style.width = `${pct}%`;
+      document.getElementById("ui-xp-label").textContent = `${currentXPProgress} / ${neededXP} XP`;
+
+      const streakEl = document.getElementById("streak-indicator");
+      if (gameState.curStreak >= 3) {
+        streakEl.classList.remove("hidden");
+        streakEl.textContent = `🔥 ${gameState.curStreak}`;
+      } else {
+        streakEl.classList.add("hidden");
+      }
+    }
+
+    function updateModeUI() {
+      const infoBox = document.getElementById("mode-status-info");
+      const lenContainer = document.getElementById("length-selector-container");
+
+      if (currentMode === 'duo') {
+        lenContainer.classList.add("opacity-40", "pointer-events-none");
+        infoBox.innerHTML = `<span class="text-teal-400 font-extrabold">Dual Board Solitaire</span>`;
+      } else {
+        lenContainer.classList.remove("opacity-40", "pointer-events-none");
+        if (currentMode === 'rush') {
+          infoBox.innerHTML = `<span>⏳ <span class="text-amber-400 font-mono font-bold text-sm">${rushTimeLeft}s</span> | Combo: <strong class="text-emerald-400">${rushSolvedCount}</strong></span>`;
+        } else if (currentMode === 'daily') {
+          const completed = (gameState.lastDailyPlayedEpoch === getDailyEpoch());
+          infoBox.innerHTML = completed ? `<span class="text-emerald-400 font-bold">✓ Daily Completed</span>` : `<span>📅 Daily Puzzle</span>`;
+        } else {
+          infoBox.innerHTML = `<span class="text-slate-400">♾️ Non-repeating mode</span>`;
+        }
+      }
+    }
+
+    function showStatsModal(won, xpGain = 0, coinsGain = 0) {
+      const modal = document.getElementById("modal-stats");
+      const title = document.getElementById("stats-title");
+      const solEl = document.getElementById("stats-solution");
+      const defEl = document.getElementById("stats-definition");
+
+      title.textContent = won ? "VICTORY!" : "GAME OVER";
+      title.className = `text-2xl font-black font-display mb-1 ${won ? "text-emerald-400" : "text-rose-400"}`;
+
+      const answerText = (currentMode === 'duo') ? `${targetWordA} & ${targetWordB}` : targetWordA;
+      solEl.textContent = `Solution: ${answerText}`;
+
+      const defA = WORD_REPOSITORY[currentLength].definitions[targetWordA] || "A refined English word.";
+      defEl.textContent = `"${defA}"`;
+
+      document.getElementById("payout-xp").textContent = `+${xpGain}`;
+      document.getElementById("payout-coins").textContent = `+${coinsGain}`;
+      document.getElementById("payout-streak").textContent = `${gameState.curStreak} 🔥`;
+
+      document.getElementById("stat-played").textContent = gameState.played;
+      const winPct = gameState.played > 0 ? Math.round((gameState.wins / gameState.played) * 100) : 0;
+      document.getElementById("stat-winpct").textContent = `${winPct}%`;
+      document.getElementById("stat-curstreak").textContent = gameState.curStreak;
+      document.getElementById("stat-maxstreak").textContent = gameState.maxStreak;
+
+      // Render Distribution Chart
+      const distContainer = document.getElementById("stats-distribution");
+      distContainer.innerHTML = "";
+      const maxVal = Math.max(...gameState.distribution, 1);
+
+      for (let i = 0; i < maxAttempts; i++) {
+        const val = gameState.distribution[i] || 0;
+        const row = document.createElement("div");
+        row.className = "flex items-center gap-2";
+
+        const lbl = document.createElement("span");
+        lbl.className = "w-3 text-right text-slate-400 font-bold";
+        lbl.textContent = i + 1;
+
+        const track = document.createElement("div");
+        track.className = "flex-1 bg-slate-800 rounded-md overflow-hidden flex";
+
+        const fill = document.createElement("div");
+        const pct = Math.max((val / maxVal) * 100, 7);
+        const isCurrentWin = won && (currentRow === i);
+        fill.style.width = `${pct}%`;
+        fill.className = `py-0.5 px-2 text-right text-white font-bold transition-all ${
+          isCurrentWin ? "bg-emerald-500 font-black" : "bg-slate-700"
+        }`;
+        fill.textContent = val;
+
+        track.appendChild(fill);
+        row.appendChild(lbl);
+        row.appendChild(track);
+        distContainer.appendChild(row);
+      }
+
+      modal.classList.remove("hidden");
+    }
+
+    function shareToClipboard() {
+      const attemptsCount = isGameOver && (boardAWon && (currentMode !== 'duo' || boardBWon)) ? currentRow + 1 : "X";
+      let text = `LEXICON SUPREME: ${currentMode.toUpperCase()} (${currentLength}L) ${attemptsCount}/${maxAttempts}\n`;
+      text += `Streak: ${gameState.curStreak} 🔥 | Lv. ${gameState.level}\n\n`;
+
+      // Build emoji grid
+      for (let r = 0; r <= currentRow; r++) {
+        let rowEmojis = "";
+        for (let c = 0; c < currentLength; c++) {
+          const inner = document.getElementById(`inner-A-${r}-${c}`);
+          if (inner && inner.classList.contains("flipped")) {
+            const back = inner.querySelector(".tile-back");
+            if (back.classList.contains("bg-correct")) rowEmojis += "🟩";
+            else if (back.classList.contains("bg-present")) rowEmojis += "🟨";
+            else rowEmojis += "⬛";
+          }
+        }
+        text += rowEmojis + "\n";
+      }
+
+      // Safe clipboard write using textarea
+      const el = document.createElement("textarea");
+      el.value = text;
+      el.style.position = "fixed";
+      el.style.top = "-9999px";
+      document.body.appendChild(el);
+      el.select();
+      try {
+        const ok = document.execCommand("copy");
+        showToast(ok ? "Copied score card to clipboard!" : "Could not copy score");
+      } catch (err) {
+        showToast("Clipboard copy unsupported");
+      }
+      document.body.removeChild(el);
+    }
+
+    /* ==========================================================================
+       11. EVENT LISTENERS & INITIALIZATION
+       ========================================================================== */
+    function setupModeTabs() {
+      document.querySelectorAll(".tab-mode").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const targetMode = btn.dataset.mode;
+          if (currentMode === targetMode) return;
+          currentMode = targetMode;
+
+          document.querySelectorAll(".tab-mode").forEach(b => {
+            b.className = "tab-mode py-1.5 rounded-lg transition-all text-slate-400 hover:text-white";
+          });
+          btn.className = "tab-mode py-1.5 rounded-lg transition-all bg-emerald-600 text-white shadow";
+
+          // Clear rush timer if switching modes
+          if (rushTimerInterval) {
+            clearInterval(rushTimerInterval);
+            rushTimerInterval = null;
+          }
+
+          if (currentMode === 'rush') {
+            startRushMode();
+          } else {
+            initRound();
+          }
+        });
+      });
+
+      // Length Selector
+      document.querySelectorAll(".btn-len").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const len = parseInt(btn.dataset.len, 10);
+          if (currentLength === len) return;
+          currentLength = len;
+
+          document.querySelectorAll(".btn-len").forEach(b => {
+            b.className = "btn-len px-2.5 py-0.5 rounded font-bold text-slate-400 hover:text-white transition";
+          });
+          btn.className = "btn-len px-2.5 py-0.5 rounded font-bold bg-emerald-500 text-white transition";
+
+          initRound();
+        });
+      });
+    }
+
+    function startRushMode() {
+      rushTimeLeft = 60;
+      rushSolvedCount = 0;
+      updateModeUI();
+      initRound();
+
+      showToast("⚡ Rush Blitz Started! 60s on clock!", 2500);
+
+      rushTimerInterval = setInterval(() => {
+        rushTimeLeft--;
+        updateModeUI();
+
+        if (rushTimeLeft <= 10 && rushTimeLeft > 0) {
+          soundfx.tick();
+        }
+
+        if (rushTimeLeft <= 0) {
+          clearInterval(rushTimerInterval);
+          rushTimerInterval = null;
+          isGameOver = true;
+          soundfx.defeat();
+          showToast(`⏰ TIME'S UP! Solved ${rushSolvedCount} words!`, 4000);
+          setTimeout(() => {
+            showStatsModal(rushSolvedCount > 0, rushSolvedCount * 60, rushSolvedCount * 25);
+          }, 1500);
+        }
+      }, 1000);
+    }
+
+    function setupModals() {
+      const helpModal = document.getElementById("modal-help");
+      const settingsModal = document.getElementById("modal-settings");
+      const statsModal = document.getElementById("modal-stats");
+
+      document.getElementById("btn-howtoplay").addEventListener("click", () => helpModal.classList.remove("hidden"));
+      document.getElementById("btn-settings").addEventListener("click", () => settingsModal.classList.remove("hidden"));
+      document.getElementById("btn-stats").addEventListener("click", () => showStatsModal(false, 0, 0));
+
+      document.querySelectorAll(".modal-close").forEach(btn => {
+        btn.addEventListener("click", () => {
+          helpModal.classList.add("hidden");
+          settingsModal.classList.add("hidden");
+          statsModal.classList.add("hidden");
+        });
+      });
+
+      [helpModal, settingsModal, statsModal].forEach(m => {
+        m.addEventListener("click", (e) => {
+          if (e.target === m) m.classList.add("hidden");
+        });
+      });
+
+      document.getElementById("btn-share-result").addEventListener("click", shareToClipboard);
+      document.getElementById("btn-next-round").addEventListener("click", () => {
+        if (currentMode === 'rush') {
+          startRushMode();
+        } else {
+          initRound();
+        }
+      });
+
+      // Settings toggles
+      const hardToggle = document.getElementById("setting-hardmode");
+      hardToggle.checked = gameState.hardMode;
+      hardToggle.addEventListener("change", (e) => {
+        gameState.hardMode = e.target.checked;
+        saveState(gameState);
+        showToast(gameState.hardMode ? "Hard mode enabled" : "Hard mode disabled");
+      });
+
+      const highContrastToggle = document.getElementById("setting-highcontrast");
+      highContrastToggle.checked = gameState.highContrast;
+      if (gameState.highContrast) document.body.classList.add("high-contrast");
+      highContrastToggle.addEventListener("change", (e) => {
+        gameState.highContrast = e.target.checked;
+        document.body.classList.toggle("high-contrast", gameState.highContrast);
+        saveState(gameState);
+      });
+
+      const soundToggle = document.getElementById("setting-sound");
+      soundToggle.checked = gameState.sound;
+      soundToggle.addEventListener("change", (e) => {
+        gameState.sound = e.target.checked;
+        saveState(gameState);
+        updateSoundIcon();
+      });
+
+      document.getElementById("btn-sound-toggle").addEventListener("click", () => {
+        gameState.sound = !gameState.sound;
+        soundToggle.checked = gameState.sound;
+        saveState(gameState);
+        updateSoundIcon();
+        showToast(gameState.sound ? "Sound active" : "Sound muted", 1000);
+      });
+
+      document.getElementById("btn-reset-history").addEventListener("click", () => {
+        gameState.seenWords = { 4: [], 5: [], 6: [] };
+        saveState(gameState);
+        showToast("Cleared word memory! Fresh cycle started.", 2500);
+      });
+    }
+
+    function updateSoundIcon() {
+      const onIcon = document.getElementById("icon-sound-on");
+      const offIcon = document.getElementById("icon-sound-off");
+      if (gameState.sound) {
+        onIcon.classList.remove("hidden");
+        offIcon.classList.add("hidden");
+      } else {
+        onIcon.classList.add("hidden");
+        offIcon.classList.remove("hidden");
+      }
+    }
+
+    function setupPhysicalKeyboard() {
+      window.addEventListener("keydown", (e) => {
+        if (e.altKey || e.ctrlKey || e.metaKey) return;
+        soundfx.init();
+
+        const k = e.key.toUpperCase();
+        if (k === "ENTER") {
+          handleInput("ENTER");
+        } else if (k === "BACKSPACE" || k === "DELETE") {
+          handleInput("BACKSPACE");
+        } else if (/^[A-Z]$/.test(k)) {
+          handleInput(k);
+        }
+      });
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      buildKeyboard();
+      setupModeTabs();
+      setupModals();
+      setupPhysicalKeyboard();
+      updateSoundIcon();
+      renderProgression();
+      initRound();
+    });
+  </script>
+</body>
+</html>
